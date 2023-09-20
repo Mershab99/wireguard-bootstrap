@@ -1,0 +1,80 @@
+version: '3.3'
+
+services:
+#  uptime-kuma:
+#    image: louislam/uptime-kuma:1
+#    container_name: uptime-kuma
+#    volumes:
+#      - ./uptime-kuma-data:/app/data
+#    ports:
+#      - 3001:3001  # <Host Port>:<Container Port>
+#    restart: always
+
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+        #- SERVERURL=vpnmershab.duckdns.org #optional
+      - SERVERPORT=51820 #optional
+      - PEERS=1 #optional
+      - PEERDNS=192.168.2.1 #optional
+      - INTERNAL_SUBNET=192.168.2.0/24 #optional
+      - ALLOWEDIPS=192.168.2.221/24 #optional
+      - LOG_CONFS=true #optional
+    volumes:
+      - ./wireguard/config:/config
+      - /lib/modules:/lib/modules #optional
+    ports:
+      # Port for WireGuard-UI
+      - "5000:5000"
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: always
+
+ # WireGuard-UI service
+  wireguard-ui:
+    image: ngoduykhanh/wireguard-ui:latest
+    container_name: wireguard-ui
+    depends_on:
+      - wireguard
+    cap_add:
+      - NET_ADMIN
+    # Use the network of the 'wireguard' service
+    # This enables to show active clients in the status page
+    network_mode: service:wireguard
+    environment:
+#      - SENDGRID_API_KEY
+#      - EMAIL_FROM_ADDRESS
+#      - EMAIL_FROM_NAME
+#      - SESSION_SECRET
+      - WGUI_USERNAME=admin
+      - WGUI_PASSWORD=Fahimm123
+        #      - WG_CONF_TEMPLATE
+      - WGUI_MANAGE_START=true
+      - WGUI_MANAGE_RESTART=true
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+    volumes:
+      - ./wireguard/db:/app/db
+      - ./wireguard/config:/etc/wireguard
+
+#  duckdns:
+#    image: linuxserver/duckdns
+#    container_name: DUCKDNS
+#    environment:
+#      - TZ=America/New_York
+#      - SUBDOMAINS=mershab.duckdns.org
+#      - TOKEN=
+#      - LOG_FILE=true
+#    volumes:
+#      - ./duckdns:/config
+#    restart: always
